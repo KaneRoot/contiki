@@ -88,6 +88,9 @@ uip_ds6_nbr_add(const uip_ipaddr_t *ipaddr, const uip_lladdr_t *lladdr,
                                             , reason, data);
   if(nbr) {
     uip_ipaddr_copy(&nbr->ipaddr, ipaddr);
+
+    memcpy(&nbr->lladdr, lladdr, sizeof(linkaddr_t));
+
 #if UIP_ND6_SEND_RA || !UIP_CONF_ROUTER
     nbr->isrouter = isrouter;
 #endif /* UIP_ND6_SEND_RA || !UIP_CONF_ROUTER */
@@ -149,6 +152,13 @@ uip_ds6_nbr_get_ll(const uip_ds6_nbr_t *nbr)
 {
   return (const uip_lladdr_t *)nbr_table_get_lladdr(ds6_neighbors, nbr);
 }
+
+int
+uip_ds6_nbr_set_ll(const uip_ds6_nbr_t *nbr, const uip_lladdr_t* lladdr)
+{
+  return nbr_table_update_item_lladdr(ds6_neighbors, nbr, (const linkaddr_t*)lladdr);
+}
+
 /*---------------------------------------------------------------------------*/
 int
 uip_ds6_nbr_num(void)

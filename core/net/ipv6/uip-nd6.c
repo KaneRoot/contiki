@@ -423,6 +423,9 @@ uip_nd6_ns_output(uip_ipaddr_t * src, uip_ipaddr_t * dest, uip_ipaddr_t * tgt)
   UIP_ICMP_BUF->icmpchksum = ~uip_icmp6chksum();
 
   UIP_STAT(++uip_stat.nd6.sent);
+
+  // PRINTF("%lu", clock_time());
+
   PRINTF("Sending NS to ");
   PRINT6ADDR(&UIP_IP_BUF->destipaddr);
   PRINTF(" from ");
@@ -461,6 +464,8 @@ na_input(void)
   uint8_t is_solicited;
   uint8_t is_override;
   uip_lladdr_t lladdr_aligned;
+
+  // PRINTF("%lu - ", clock_time());
 
   PRINTF("Received NA from ");
   PRINT6ADDR(&UIP_IP_BUF->srcipaddr);
@@ -539,9 +544,14 @@ na_input(void)
     }
     if(nbr->state == NBR_INCOMPLETE) {
       if(nd6_opt_llao == NULL || !extract_lladdr_from_llao_aligned(&lladdr_aligned)) {
+        PRINTF("right on time\n");
         goto discard;
       }
-      if(nbr_table_update_lladdr((const linkaddr_t *)lladdr, (const linkaddr_t *)&lladdr_aligned, 1) == 0) {
+
+      if(uip_ds6_nbr_set_ll(nbr, &lladdr_aligned) == 1) {
+        //if(nbr_table_update_lladdr((const linkaddr_t *)lladdr, (const linkaddr_t *)&lladdr_aligned, 1) == 0) {
+
+        PRINTF("failed to update the lladdr");
         /* failed to update the lladdr */
         goto discard;
       }
@@ -553,6 +563,12 @@ na_input(void)
       if(!is_solicited) {
         nbr->state = NBR_STALE;
       }
+      else {
+        nbr->state = NBR_REACHABLE;
+        nbr->nscount = 0;
+        stimer_set(&nbr->reachable, UIP_ND6_REACHABLE_TIME / 1000);
+      }
+
       nbr->isrouter = is_router;
     } else { /* NBR is not INCOMPLETE */
       if(!is_override && is_llchange) {
@@ -577,6 +593,11 @@ na_input(void)
            * It has already been refreshed upon receiving the unicast IPv6 ND packet.
            * See: uip_ds6_nbr_refresh_reachable_state()
            */
+
+          /* FIXME: this is wrong, update nbr only if two way communication has been verfied */
+          nbr->state = NBR_REACHABLE;
+          nbr->nscount = 0;
+          stimer_set(&nbr->reachable, UIP_ND6_REACHABLE_TIME / 1000);
         }
       }
       if(nbr->isrouter && !is_router) {
@@ -741,7 +762,6 @@ uip_nd6_ra_output(uip_ipaddr_t * dest)
 
   uip_len = UIP_IPH_LEN + UIP_ICMPH_LEN + UIP_ND6_RA_LEN;
   nd6_opt_offset = UIP_ND6_RA_LEN;
-
 
   /* Prefix list */
   for(prefix = uip_ds6_prefix_list;

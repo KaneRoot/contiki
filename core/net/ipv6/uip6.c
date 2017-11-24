@@ -1156,6 +1156,8 @@ uip_process(uint8_t flag)
   }
 
   /* Refresh neighbor state after receiving a unicast message */
+  // FIXME: comment this part because its not what the RFC says
+  /*
 #if UIP_ND6_SEND_NS
   if(!uip_is_addr_mcast(&UIP_IP_BUF->destipaddr)) {
     uip_ds6_nbr_refresh_reachable_state(&UIP_IP_BUF->srcipaddr);

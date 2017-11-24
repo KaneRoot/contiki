@@ -420,6 +420,19 @@ nbr_table_get_lladdr(nbr_table_t *table, const void *item)
   nbr_table_key_t *key = key_from_item(table, item);
   return key != NULL ? &key->lladdr : NULL;
 }
+
+/*---------------------------------------------------------------------------*/
+/* Update link-layer address of an item */
+int
+nbr_table_update_item_lladdr(nbr_table_t *table, const void *item, const linkaddr_t* new)
+{
+  nbr_table_key_t *key = key_from_item(table, item);
+  if(key != NULL) {
+    memcpy(&key->lladdr, new, sizeof(linkaddr_t));
+  }
+  return 0;
+}
+
 /*---------------------------------------------------------------------------*/
 /* Update link-layer address of an item */
 int
@@ -431,10 +444,12 @@ nbr_table_update_lladdr(const linkaddr_t *old_addr, const linkaddr_t *new_addr,
   nbr_table_key_t *key;
   index = index_from_lladdr(old_addr);
   if(index == -1) {
+    PRINTF("nbr_table_update_lladdr: failure to change since there is nothing to change\n");
     /* Failure to change since there is nothing to change. */
     return 0;
   }
   if((new_index = index_from_lladdr(new_addr)) != -1) {
+    // PRINTF("%02d - %02d\n", index, new_index);
     /* check if it is a change or not - do not remove / fail if same */
     if(new_index == index) {
       return 1;
@@ -443,6 +458,7 @@ nbr_table_update_lladdr(const linkaddr_t *old_addr, const linkaddr_t *new_addr,
     if(remove_if_duplicate) {
       remove_key(key_from_index(index));
     }
+    PRINTF("nbr_table_update_lladdr: this new entry already exists - failure! - remove if requested.\n");
     return 0;
   }
   key = key_from_index(index);

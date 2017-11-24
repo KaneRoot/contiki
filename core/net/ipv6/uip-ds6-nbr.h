@@ -73,6 +73,9 @@ typedef struct uip_ds6_nbr {
   struct stimer reachable;
   struct stimer sendns;
   uint8_t nscount;
+
+  linkaddr_t lladdr;
+
 #endif /* UIP_ND6_SEND_NS || UIP_ND6_SEND_RA */
 #if UIP_CONF_IPV6_QUEUE_PKT
   struct uip_packetqueue_handle packethandle;
@@ -89,6 +92,8 @@ uip_ds6_nbr_t *uip_ds6_nbr_add(const uip_ipaddr_t *ipaddr,
                                nbr_table_reason_t reason, void *data);
 int uip_ds6_nbr_rm(uip_ds6_nbr_t *nbr);
 const uip_lladdr_t *uip_ds6_nbr_get_ll(const uip_ds6_nbr_t *nbr);
+
+int uip_ds6_nbr_set_ll(const uip_ds6_nbr_t *nbr, const uip_lladdr_t *lladdr);
 const uip_ipaddr_t *uip_ds6_nbr_get_ipaddr(const uip_ds6_nbr_t *nbr);
 uip_ds6_nbr_t *uip_ds6_nbr_lookup(const uip_ipaddr_t *ipaddr);
 uip_ds6_nbr_t *uip_ds6_nbr_ll_lookup(const uip_lladdr_t *lladdr);
