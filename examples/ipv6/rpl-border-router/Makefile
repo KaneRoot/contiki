@@ -41,6 +41,8 @@ ifeq ($(PREFIX),)
 endif
 
 CONTIKI_WITH_IPV6 = 1
+CONTIKI_WITH_RPL = 0
+CFLAGS += -DCONTIKI_WITH_RPL=0
 include $(CONTIKI)/Makefile.include
 
 $(CONTIKI)/tools/tunslip6:	$(CONTIKI)/tools/tunslip6.c

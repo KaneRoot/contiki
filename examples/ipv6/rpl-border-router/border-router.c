@@ -107,7 +107,11 @@ PROCESS_THREAD(webserver_nogui_process, ev, data)
 }
 AUTOSTART_PROCESSES(&border_router_process,&webserver_nogui_process);
 
+#if CONTIKI_WITH_RPL
 static const char *TOP = "<html><head><title>ContikiRPL</title></head><body>\n";
+#else
+static const char *TOP = "<html><head><title>ContikiNDP</title></head><body>\n";
+#endif
 static const char *BOTTOM = "</body></html>\n";
 #if BUF_USES_STACK
 static char *bufptr, *bufend;
@@ -350,6 +354,7 @@ httpd_simple_get_script(const char *name)
 #endif /* WEBSERVER */
 
 /*---------------------------------------------------------------------------*/
+#if DEBUG
 static void
 print_local_addresses(void)
 {
@@ -367,6 +372,7 @@ print_local_addresses(void)
     }
   }
 }
+#endif
 /*---------------------------------------------------------------------------*/
 void
 request_prefix(void)
@@ -382,7 +388,9 @@ request_prefix(void)
 void
 set_prefix_64(uip_ipaddr_t *prefix_64)
 {
+#if CONTIKI_WITH_RPL
   rpl_dag_t *dag;
+#endif
   uip_ipaddr_t ipaddr;
   memcpy(&prefix, prefix_64, 16);
   memcpy(&ipaddr, prefix_64, 16);
@@ -390,11 +398,15 @@ set_prefix_64(uip_ipaddr_t *prefix_64)
   uip_ds6_set_addr_iid(&ipaddr, &uip_lladdr);
   uip_ds6_addr_add(&ipaddr, 0, ADDR_AUTOCONF);
 
+#if CONTIKI_WITH_RPL
   dag = rpl_set_root(RPL_DEFAULT_INSTANCE, &ipaddr);
   if(dag != NULL) {
     rpl_set_prefix(dag, &prefix, 64);
     PRINTF("created a new RPL dag\n");
   }
+#else
+  uip_ds6_prefix_add(&prefix, 64, 1, UIP_ND6_RA_FLAG_AUTONOMOUS, 3600*4 /* vtime */, 3600*4 /* ptime */);
+#endif
 }
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(border_router_process, ev, data)
@@ -415,7 +427,12 @@ PROCESS_THREAD(border_router_process, ev, data)
 
   SENSORS_ACTIVATE(button_sensor);
 
-  PRINTF("RPL-Border router started\n");
+#if CONTIKI_WITH_RPL
+	PRINTF("RPL-Border router started\n");
+#else
+	PRINTF("NDP-Border router started\n");
+#endif
+
 #if 0
    /* The border router runs with a 100% duty cycle in order to ensure high
      packet reception rates.
@@ -436,15 +453,19 @@ PROCESS_THREAD(border_router_process, ev, data)
    */
   NETSTACK_MAC.off(1);
 
-#if DEBUG || 1
+#if DEBUG
   print_local_addresses();
 #endif
 
   while(1) {
     PROCESS_YIELD();
     if (ev == sensors_event && data == &button_sensor) {
+#if CONTIKI_WITH_RPL
       PRINTF("Initiating global repair\n");
       rpl_repair_root(RPL_DEFAULT_INSTANCE);
+#else
+      PRINTF("Sensor event...\n");
+#endif
     }
   }
 
